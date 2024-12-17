@@ -112,8 +112,16 @@ impl Args {
         let mut conn = get_con(DATABASENAME).unwrap();
         let transaction = conn.transaction_with_behavior(rusqlite::TransactionBehavior::Deferred)?;
 
+        
+        transaction.execute(
+            "UPDATE FILTRO SET ATIVO = FALSE ",
+            params![],
+            
+        )?;
+     
         //Primeiro cria uma lista de filtros
         for arquivo in arquivos.into_iter() {
+         
             transaction.execute(
                 "INSERT OR REPLACE INTO filtro (expressao, ativo) VALUES (
                 ?1,
@@ -168,10 +176,11 @@ WHERE  uses > '' AND NOT uses LIKE '%\{%' limit $1 offset $2;
         let transaction = conn.transaction_with_behavior(rusqlite::TransactionBehavior::Deferred)?;
 
         transaction.execute(
-            "UPDATE FILTRO SET ATIVO = FALSE     ",
+            "UPDATE FILTRO SET ATIVO = FALSE ",
             params![],
             
         )?;
+
         transaction.execute(
             "DELETE FROM VISUALIZA ",
             params![],
