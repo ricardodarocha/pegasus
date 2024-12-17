@@ -135,11 +135,11 @@ impl Args {
         let conn: rusqlite::Connection = get_con(DATABASENAME).unwrap();
 
         let mut stmt = conn.prepare(r#"
-            SELECT path||'-->'|| uses  AS "node" 
+            SELECT distinct path||'-->'|| uses  AS "node" 
             FROM visualiza v
             JOIN filtro f  ON  ( upper("path") LIKE '%' || upper(f."expressao") || '%' 
                            OR    upper(uses) LIKE '%' || upper(f."expressao") || '%') 
-WHERE  uses > '' AND NOT uses LIKE '%\{%' limit $1 offset $2;
+            WHERE  uses > '' AND NOT uses LIKE '%\{%' and  f.ativo = True limit ?1 offset ?2 ;
         "#)?;
         let node_iter = stmt.query_map([limit, (page-1) * limit], |row| {
             Ok(Node {
@@ -153,12 +153,9 @@ WHERE  uses > '' AND NOT uses LIKE '%\{%' limit $1 offset $2;
         let file = File::create("Grapho/output.mmd")?;
         let mut file_writer = io::BufWriter::new(file);
 
-
         writeln!(handle, "stateDiagram-v2")?;
         writeln!(file_writer, "stateDiagram-v2")?;
 
-
-        
         for node in node_iter {
             let value = node.unwrap().value;
             writeln!(handle, "{value}" )?;
