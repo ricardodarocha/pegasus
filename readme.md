@@ -84,7 +84,7 @@ ORDER BY 2 desc, 3 desc;
 
 ```sql
 --Configure os filtros 
-update filtro set ativo = true;
+update filtro set ativo = False;
 
 INSERT INTO filtro (expressao) VALUES 
 ('json'), 
