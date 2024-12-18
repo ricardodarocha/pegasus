@@ -95,7 +95,18 @@ JOIN filtro f  ON  ( upper("path") LIKE '%' || upper(f."expressao") || '%' OR up
 WHERE  uses > '' AND NOT uses LIKE '%{%' and f.ativo = True;
 ```
 
+## Visualizando as dependências
 
+Os arquivos gerados com a extensão .mmd (Mermaid JS)  ficam na pasta /Grapho
+Instale a extensão **Mermaid Preview** no VSCode ou acesse o playground https://mermaid.live/
 
+```mermaid
+stateDiagram-v2
+Alfa-->Omega
+Alfa-->Sigma
+Alfa-->Delta
+Sigma-->Delta
 
+```
 
+![Alt text](pegasus.png)
