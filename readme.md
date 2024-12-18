@@ -109,4 +109,4 @@ Sigma-->Delta
 
 ```
 
-![Alt text](pegasus.png)
+![Alt text](dependencias.png)
