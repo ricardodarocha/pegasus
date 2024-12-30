@@ -19,14 +19,16 @@ FROM dependencias p
 JOIN filtro f ON (p.name LIKE '%' || f."expressao" || '%') AND f.ativo;
 
 
---Configure os filstros 
+--Configure os filtros 
+update filtro set ativo = true;
+
 INSERT INTO filtro (expressao) VALUES 
 ('json'), 
 ('form') ;
 
 SELECT path||'-->'|| uses  AS "node: String" FROM visualiza v
 JOIN filtro f  ON  ( upper("path") LIKE '%' || upper(f."expressao") || '%' OR upper(uses) LIKE '%' || upper(f."expressao") || '%') 
-WHERE  uses > '' AND NOT uses LIKE '%{%';
+WHERE  uses > '' AND NOT uses LIKE '%{%' and f.ativo = True;
 
 
 

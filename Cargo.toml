@@ -1,6 +1,6 @@
 [package]
 name = "peg"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 
 [dependencies]
@@ -9,6 +9,7 @@ charset = "0.1.5"
 charset-normalizer-rs = "1.0.6"
 clap = "4.5.21"
 encoding_rs = "0.8.35"
+indicatif = "0.17.9"
 regex = "1.11.1"
 rusqlite = "0.32.1"
 serde = { version = "1.0.216", features = ["derive"] }

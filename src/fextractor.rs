@@ -21,7 +21,6 @@ use crate::{fencoding::detect_and_convert_to_utf8, fextract::extrair_uses, fextr
                 )",
                 (self.filename, self.filepath.replace("\\", &"/"), self.interf.join(", "), self.implemen.join(", ")),
             ).unwrap();
-            println!("Salvou..");
         }
     }
     

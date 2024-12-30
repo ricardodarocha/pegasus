@@ -1,6 +1,7 @@
 use crate::fextractor::{get_con, DATABASENAME};
 use rusqlite::params;
 use crate::Result;
+use indicatif::ProgressBar;
 
 #[derive(Debug)]
 struct Dependencia {
@@ -24,9 +25,14 @@ fn limpa_nome(name: String) -> String {
   }
 }
 
-pub fn prepara(tipo: &str) -> Result<()> {
+pub fn prepara(tipo: &str, pb: &mut ProgressBar) -> Result<()> {
   let mut conn = get_con(DATABASENAME).unwrap();
   let transaction = conn.transaction_with_behavior(rusqlite::TransactionBehavior::Deferred)?;
+  pb.set_message(format!("Preparando visualização [{}]", tipo));
+  // pb.reset_eta();
+
+  pb.reset();
+
 
   let ro_connection = get_con("grapho.ro").unwrap();
   let mut stmt = if tipo == "uses interface" {
@@ -34,6 +40,7 @@ pub fn prepara(tipo: &str) -> Result<()> {
   else {
     ro_connection.prepare("SELECT DISTINCT id, name, uses_implementation FROM dependencias where uses_implementation is not null")?};
   let dependencias_iter = stmt.query_map([], |row| {
+      pb.inc(1);
       Ok(Dependencia {
           id: row.get(0)?,
           path: limpa_nome(row.get(1)?),
@@ -50,7 +57,7 @@ pub fn prepara(tipo: &str) -> Result<()> {
       // Inserir cada dependência na tabela 'visualiza'
       for dep in dependencias_split {
           let dep_trimmed = dep.trim().to_string().replace(";", "");  
-
+          pb.inc(1);
           transaction.execute(
               "INSERT OR REPLACE INTO visualiza (id, path, uses, tipo) VALUES (?1, ?2, ?3, ?4)",
               params![dependencia.id, dependencia.path, dep_trimmed, tipo],

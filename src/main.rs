@@ -6,6 +6,7 @@ pub mod fmonitor;
 pub mod fprocessor;
 pub mod fvisualization;
 use std::error::Error as StdError;
+use std::path::Path;
 
 pub type Result<T, E = Box<dyn StdError>> = std::result::Result<T, E>;
 
@@ -14,12 +15,12 @@ pub const LIMIT: u32 = 9000;
 use clap::{Parser, Subcommand};
 use fextractor::{get_con, migrate};
 use fmonitor::monitore;
-use fprocessor::processa_pasta;
+use fprocessor::{contar_arquivos, processa_pasta};
 use fvisualization::prepara;
 use rusqlite::params;
 use crate::fextractor::DATABASENAME;
 
-/// 🪽 PEGASUS 1.0 (peg.exe)
+/// 🪽 PEGASUS 1.1 (peg.exe)
 /// .pas Explorer, Grapho Analyse Uses
 #[derive(Parser)]
 #[command(name = "📗 Comandos")]
@@ -33,7 +34,9 @@ struct Args {
 /// Subcomandos disponíveis
 #[derive(Subcommand)]
 pub enum Commands {
-    /// Explora um diretório com base nos parâmetros informados
+    /// Explora um diretório com base nos parâmetros informados, 
+    /// percorre os fontes com extensão .pas e faz o levantamento de todas 
+    /// as dependências no uses interface e no uses implementation
     Explorar {
         /// Caminho do diretório a ser analisado
         #[arg(short, long)]
@@ -42,19 +45,22 @@ pub enum Commands {
         /// Limite de arquivos a analisar (0 significa sem limite)
         #[arg(short, long, default_value_t = 9000)]
         deep: u32,
+
+        #[arg(short, long, default_value_t = false)]
+        silent: bool,
     },
     
-    /// Gera visualizações com base nos arquivos fornecidos
+    /// Gera visualizações com base em uma lista de palavras chave
     Visualizar {
-        /// Lista de arquivos para visualização
+      
         // #[arg(short, long)]
-        arquivos: Vec<String>,
+        dependencias: Vec<String>,
 
-        /// Limite de arquivos a analisar (0 significa sem limite)
+        /// Paginação 
         #[arg(short, long, default_value_t = 50)]
         limit: u32,
 
-        /// Limite de arquivos a analisar (0 significa sem limite)
+        /// Página atual
         #[arg(short, long, default_value_t = 1)]
         page: u32,
     },
@@ -67,35 +73,43 @@ pub struct Node {
     pub value: String,
 }
 
-
-
 use std::io::{self, Write};
 use std::fs::File;
 
-
 impl Args {
     /// Método que chama a função explore
-    fn explore(caminho: String, deep: u32) -> Result<(), Box<dyn std::error::Error>> {
+    fn explore(caminho: String, deep: u32, silent: bool) -> Result<(), Box<dyn std::error::Error>> {
         let mut count: u32 = 0;
         dbg!(deep);
+        let pat = Path::new(&caminho);
+        let estimativa = contar_arquivos(pat,  Some("pas")).unwrap();
+        let total = if deep == 0 {
+            estimativa
+        } else if estimativa < deep.try_into().unwrap() {
+            estimativa
+        } else {
+            deep.try_into().unwrap()
+        };
+        dbg!(estimativa);
+        dbg!(total);
 
         // Chama a função para processar o diretório
-        monitore(&"🗂️  explorando... ", || {
+        monitore(&"🗂️  explorando... ", total, |pb| {
     
-            let _ = processa_pasta(&caminho, &mut count, deep);
+            let _ = processa_pasta(&caminho, &mut count, deep, silent, pb);
         });
 
         // Monta as visualizações de uses interface
-        monitore(&"uses interface", || {
-            match prepara("uses interface") {
+        monitore(&"uses interface", total, | pb | {
+            match prepara("uses interface", pb) {
                 Ok(_) => {},
                 Err(err) => println!("{err}"),
             };
         });
 
     // Monta as visualizações de uses implementation
-    monitore(&"uses implementation", || {
-        match prepara("uses implementation") {
+    monitore(&"uses implementation", total, | pb | {
+        match prepara("uses implementation", pb) {
             Ok(_) => {},
             Err(err) => println!("{err}"),
         };
@@ -195,7 +209,7 @@ impl Args {
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    println!("%% PEGASUS 1.0 🪽  | peg.exe ");
+    println!("%% PEGASUS 1.1 🪽  | peg.exe ");
     let _ = migrate(get_con(&DATABASENAME).unwrap());
 
     // let args: Vec<String> = env::args().collect();
@@ -203,15 +217,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 
     match args.command {
-        Commands::Explorar { caminho, deep } => {
+        Commands::Explorar { caminho, deep , silent} => {
             let caminho =         match caminho {
                 Some(value) => value,   
                 _ => std::env::current_dir()?.to_str().unwrap().to_string() // Diretório atual
             };
-            Args::explore(caminho, deep)
+            Args::explore(caminho, deep, silent)
         },
-        Commands::Visualizar { arquivos, limit, page } => {
-            Args::visualiza(arquivos, limit, page)
+        Commands::Visualizar { dependencias, limit, page } => {
+            Args::visualiza(dependencias, limit, page)
         },
         Commands::Limpar => {
             Args::limpar()
